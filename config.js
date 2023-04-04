@@ -7,7 +7,7 @@ if (process.env.NODE_ENV == 'development') {
 const config = {
 	base_url: BASE_URL,
 	appId: 'wxbeb0d268cea2ca7a',
-	appKey: '859f103541f32df31410e207c4482c02'
+	appKey: 'xxxxx'
 }
 
 export { config }
