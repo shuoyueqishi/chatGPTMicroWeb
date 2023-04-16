@@ -4,7 +4,7 @@
 			scroll-with-animation="true">
 			<view id="chatContent" v-for="(message,index) in mdMessageList" :key="index">
 				<view v-if="message.role==='user'" class="message-right">
-					<towxml :nodes="message.content"/>
+					<towxml :nodes="message.content" class="content-right" />
 					<view class="head-image">
 						<image mode="aspectFit" src="/static/images/headImages/userQuery.png" class="head-image">
 						</image>
@@ -14,7 +14,9 @@
 					<view class="head-image">
 						<image mode="aspectFit" src="/static/images/headImages/AI.png" class="head-image"></image>
 					</view>
-					<towxml :nodes="message.content"/>
+					<view class="content-left">
+						<towxml :nodes="message.content" class="content-left" />
+					</view>
 				</view>
 			</view>
 		</scroll-view>
@@ -39,6 +41,13 @@
 		},
 		data() {
 			return {
+				testMsgList: [{
+					role: "user",
+					content: '你好 ``` public class Demo{ private String name;}```'
+				}, {
+					role: "assistant",
+					content: '这是你需要的代码 ``` public class Assistant{ private String name; private String code;}```  # 结果如下：- 1 - 2'
+				}],
 				towxmlFunc: require('@/static/towxml/index.js'),
 				mdMessageList: [], // 页面显示MD的消息列表
 				pendingMsg: {
@@ -58,7 +67,14 @@
 			}
 		},
 		onLoad(options) {
-			// this.pendingMsg.content=this.towxmlFunc(this.pendingMsg.content,'markdown')
+			if (this.testMsgList.length > 0) {
+				for (let i = 0; i < this.testMsgList.length; i++) {
+					this.mdMessageList.push({
+						role: this.testMsgList[i].role,
+						content: this.towxmlFunc(this.testMsgList[i].content, 'markdown')
+					})
+				}
+			}
 		},
 
 		methods: {
@@ -99,14 +115,14 @@
 			sendMessage(message) {
 				let mdMessage = {
 					role: message.role,
-					content: this.towxmlFunc(message.content,'markdown')
+					content: this.towxmlFunc(message.content, 'markdown')
 				}
 				this.mdMessageList.push(mdMessage)
 				this.isSendingMsg = true
 				this.chatBody.messages.push(message) // 默认开启聊天上下文，将请求消息放入messages
 				let mdPendingMsg = {
 					role: this.pendingMsg.role,
-					content: this.towxmlFunc(this.pendingMsg.content,'markdown')
+					content: this.towxmlFunc(this.pendingMsg.content, 'markdown')
 				}
 				this.mdMessageList.push(mdPendingMsg) // 插入提示语
 				this.scrollToBottom()
@@ -116,11 +132,11 @@
 					data: this.chatBody,
 					success: (res) => {
 						debugger
-						if(!res.data.success){
-							let errMsg=res.data.message;
+						if (!res.data.success) {
+							let errMsg = res.data.message;
 							console.error('发送失败:', errMsg)
 							uni.showModal({
-								content: '请求ChatGPT失败, Error:'+errMsg,
+								content: '请求ChatGPT失败, Error:' + errMsg,
 								showCancel: false,
 								confirmText: '确定'
 							})
@@ -134,11 +150,11 @@
 						}
 						let resMsg = {
 							role: 'assistant',
-							content:  aiContent,
+							content: aiContent,
 						}
 						let resMdMsg = {
 							role: 'assistant',
-							content:  this.towxmlFunc(aiContent, 'markdown'),
+							content: this.towxmlFunc(aiContent, 'markdown'),
 						}
 						this.chatBody.messages.push(resMsg) // 默认开启聊天上下文，将返回消息放入messages
 						this.mdMessageList.push(resMdMsg) // 信息显示
@@ -146,7 +162,6 @@
 						this.scrollToBottom()
 					},
 					fail: (err) => {
-						console.error('消息发送失败', err)
 						this.isSendingMsg = false
 						uni.showModal({
 							content: '请求ChatGPT失败，可能服务器繁忙，请稍后再试',
@@ -184,7 +199,7 @@
 </script>
 
 
-<style>
+<style scoped>
 	.chat-container {
 		display: flex;
 		flex-direction: column;
@@ -228,18 +243,24 @@
 		/* flex-basis: 60rpx; */
 	}
 
-	.content-left {
+	.content-left>>>.h2w__main {
 		border-radius: 10rpx;
 		border: 2rpx solid black;
 		background-color: #f0f0f0;
-		/* flex-shrink: 2; */
+		flex-shrink: 1;
+		max-width: 600rpx;
+		padding: 0rpx 10rpx;
+		margin: 0;
 	}
 
-	.content-right {
+	.content-right>>>.h2w__main {
 		border-radius: 10rpx;
 		border: 2rpx solid black;
 		background-color: #e0f0f0;
-		/* flex-shrink: 2; */
+		flex-shrink: 1;
+		padding: 0rpx 10rpx;
+		margin: 0;
+		max-width: 600rpx;
 	}
 
 	.chat-input-container {
