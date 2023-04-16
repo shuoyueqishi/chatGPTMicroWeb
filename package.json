@@ -1,0 +1,17 @@
+{
+  "name": "ChatRobot-UniApp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "babel-runtime": "^6.26.0",
+    "core-js": "^2.5.7",
+    "vuex-persistedstate": "^4.1.0"
+  }
+}
