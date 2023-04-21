@@ -1,0 +1,6 @@
+{
+	"NODE_ENV": "development",
+	"BASE_URL": "http://localhost:8590",
+	"appId": "wxbeb0d268cea2ca7a",
+	"appKey": "859f103541f32df31410e207c4482c02"
+}
