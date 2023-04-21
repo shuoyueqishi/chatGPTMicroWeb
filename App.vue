@@ -1,52 +1,54 @@
 <script>
-	import {
-		config
-	} from './config.js'
-	import {
-		AppModel
-	} from './models/app.js'
-	const appModel = new AppModel()
+	import request from './request/request.js'
+	import store from './store/store.js'
 
 	export default {
 		data() {
-			return {
-			}
-		},
-		onLaunch: function() {
-			console.log('App Launch')
+			return {}
 		},
 		onShow: function() {
-			console.log('on show');
+			console.log('App Launch')
 			this.getLogin()
 		},
+
 		methods: {
 			getLogin() {
 				uni.login({
 					success: function(res) {
+						debugger
 						if (res.code) {
 							const params = {
-								code: res.code
+								js_code: res.code,
+								grant_type: 'authorization_code'
 							}
-							appModel.login(params)
+							request.post('/chat-server/wechat/login', params)
 								.then(response => {
-									this.$store.dispatch('setUserInfo', response.data)
-   									uni.setStorageSync('AuthTokens', response.data.token)
-									uni.login({
-										success(response) {
-											uni.setStorageSync('wxCode', response.code);
-										}
+									debugger
+									const openid = response.data.openid
+									const sessionKey = response.data.session_key
+									store.commit('login', {
+										"openid": openid,
+										"sessionKey": sessionKey
+									});
+
+								}).catch(err => {
+									debugger
+									uni.showToast({
+										title: '请求出错:' + err.errMsg,
+										icon: 'none'
 									})
 								})
-								.catch(errors => {
-									console.log(errors)
-								});
 						} else {
-							console.log('获取用户登录态失败！' + res.errMsg);
+							debugger
+							uni.showToast({
+								title: '获取用户登录Code为空',
+								icon: 'none'
+							})
 						}
 					},
 					fail: function() {
 						uni.showToast({
-							title: '微信登录失败',
+							title: '获取微信登录Code失败',
 							icon: 'none'
 						})
 					}

@@ -43,7 +43,7 @@
 			return {
 				testMsgList: [{
 					role: "user",
-					content: '你好 ``` public class Demo{ private String name;}```'
+					content: '你好: ``` public class Demo{ private String name;}```'
 				}, {
 					role: "assistant",
 					content: '这是你需要的代码 ``` public class Assistant{ private String name; private String code;}```  # 结果如下：- 1 - 2'
@@ -126,49 +126,43 @@
 				}
 				this.mdMessageList.push(mdPendingMsg) // 插入提示语
 				this.scrollToBottom()
-				uni.request({
-					url: 'http://8.217.31.124:8590/chat-server/v1/chat/completions',
-					method: 'POST',
-					data: this.chatBody,
-					success: (res) => {
-						debugger
-						if (!res.data.success) {
-							let errMsg = res.data.message;
-							console.error('发送失败:', errMsg)
-							uni.showModal({
-								content: '请求ChatGPT失败, Error:' + errMsg,
-								showCancel: false,
-								confirmText: '确定'
-							})
-							return
-						}
-						console.log('消息发送成功', res)
-						let aiContent = res.data.data.choices[0].message.content
-						let lastMsg = this.mdMessageList[this.mdMessageList.length - 1]
-						if (lastMsg.role === 'assistant') {
-							this.mdMessageList.pop() // 删除提示信息
-						}
-						let resMsg = {
-							role: 'assistant',
-							content: aiContent,
-						}
-						let resMdMsg = {
-							role: 'assistant',
-							content: this.towxmlFunc(aiContent, 'markdown'),
-						}
-						this.chatBody.messages.push(resMsg) // 默认开启聊天上下文，将返回消息放入messages
-						this.mdMessageList.push(resMdMsg) // 信息显示
-						this.isSendingMsg = false
-						this.scrollToBottom()
-					},
-					fail: (err) => {
-						this.isSendingMsg = false
+				this.$request.post("/chat-server/v1/chat/completions", this.chatBody).then(res => {
+					debugger
+					if (!res.success) {
+						let errMsg = res.message;
+						console.error('发送失败:', errMsg)
 						uni.showModal({
-							content: '请求ChatGPT失败，可能服务器繁忙，请稍后再试',
+							content: '请求ChatGPT失败, Error:' + errMsg,
 							showCancel: false,
 							confirmText: '确定'
 						})
-					},
+						return
+					}
+					console.log('消息发送成功', res)
+					let aiContent = res.data.choices[0].message.content
+					let lastMsg = this.mdMessageList[this.mdMessageList.length - 1]
+					if (lastMsg.role === 'assistant') {
+						this.mdMessageList.pop() // 删除提示信息
+					}
+					let resMsg = {
+						role: 'assistant',
+						content: aiContent,
+					}
+					let resMdMsg = {
+						role: 'assistant',
+						content: this.towxmlFunc(aiContent, 'markdown'),
+					}
+					this.chatBody.messages.push(resMsg) // 默认开启聊天上下文，将返回消息放入messages
+					this.mdMessageList.push(resMdMsg) // 信息显示
+					this.isSendingMsg = false
+					this.scrollToBottom()
+				}).catch(err => {
+					this.isSendingMsg = false
+					uni.showModal({
+						content: '请求ChatGPT失败，可能服务器繁忙，请稍后再试',
+						showCancel: false,
+						confirmText: '确定'
+					})
 				})
 			},
 
@@ -179,12 +173,10 @@
 				query.select('#chatContainer').boundingClientRect()
 				query.selectAll('#chatContent').boundingClientRect()
 				query.exec((res) => {
-					debugger
 					console.log("res[0].height=", res[0].height)
 					console.log("res[1].length=", res[1].length)
 					let items = res[1].length
 					if (items > this.scroll.curSubItems) {
-						debugger
 						let heightSum = 0
 						for (let i = 0; i < res[1].length; i++) {
 							heightSum = heightSum + res[1][i].height
