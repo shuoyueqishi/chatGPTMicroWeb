@@ -1,32 +1,66 @@
 <template>
-	<view class="chat-container">
-		<scroll-view id="chatContainer" class="chat-content" :scroll-top="scroll.curHeight" scroll-y="true"
-			scroll-with-animation="true">
-			<view id="chatContent" v-for="(message,index) in mdMessageList" :key="index">
-				<view v-if="message.role==='user'" class="message-right">
-					<towxml :nodes="message.content" class="content-right" />
-					<view class="head-image">
-						<image mode="aspectFit" src="/static/images/headImages/userQuery.png" class="head-image">
-						</image>
+	<view>
+		<!-- <view>
+			<uni-collapse>
+				<uni-collapse-item title="聊天工具">
+					<uni-row class="tool-bar">
+						<uni-col class="tool-item" :span="4">
+							<button class="tool-item-btn" type="primary" size="mini" @click="saveChat">保存</button>
+						</uni-col>
+						<uni-col class="tool-item" :span="4">
+							<button class="tool-item-btn" type="primary" size="mini" @click="copyChat">复制</button>
+						</uni-col>
+						<uni-col :span="6">
+							<button class="tool-item-btn" type="primary" size="mini" @click="exportMd">导出MD</button>
+						</uni-col>
+						<uni-col :span="6">
+							<button class="tool-item-btn" type="primary" size="mini" @click="exportPdf">导出PDF</button>
+						</uni-col>
+						<uni-col :span="4">
+							<button type="warn" size="mini" @click="deleteChat">删除</button>
+						</uni-col>
+					</uni-row>
+				</uni-collapse-item>
+			</uni-collapse>
+		</view> -->
+		<view class="chat-container">
+
+			<scroll-view id="chatContainer" class="chat-content" :scroll-top="scroll.curHeight" scroll-y="true"
+				scroll-with-animation="true">
+				<uni-fab ref="fab" :pattern="pattern" :content="content" :horizontal="horizontal" :vertical="vertical"
+					:direction="direction" @trigger="trigger" @fabClick="fabClick" />
+				<view id="chatContent" v-for="(message,index) in mdMessageList" :key="index">
+					<view v-if="message.role==='user'" class="message-right">
+						<towxml :nodes="message.content" class="content-right" />
+						<view class="head-image">
+							<image mode="aspectFit" :src="avatarUrl" class="head-image">
+							</image>
+							<rudon-rowMenuDotDotDot :localdata="options" @change="menuAction($event, index)">
+								···
+							</rudon-rowMenuDotDotDot>
+						</view>
+					</view>
+					<view v-if="message.role!=='user'" class="message-left">
+						<view class="head-image">
+							<image mode="aspectFit" src="/static/images/headImages/AI.png" class="head-image"></image>
+						</view>
+						<view class="content-left">
+							<towxml :nodes="message.content" class="content-left" />
+						</view>
+						<rudon-rowMenuDotDotDot :localdata="options" @change="menuAction($event, index)">
+							···
+						</rudon-rowMenuDotDotDot>
 					</view>
 				</view>
-				<view v-if="message.role!=='user'" class="message-left">
-					<view class="head-image">
-						<image mode="aspectFit" src="/static/images/headImages/AI.png" class="head-image"></image>
-					</view>
-					<view class="content-left">
-						<towxml :nodes="message.content" class="content-left" />
-					</view>
+			</scroll-view>
+			<view class="chat-input-container">
+				<view class="chat-input-wrapper">
+					<textarea @input="onInput" @blur="onBlur" :value="inputValue" focus="true" auto-height="true"
+						placeholder="请输入信息" maxlength="-1" class="chat-input" />
 				</view>
-			</view>
-		</scroll-view>
-		<view class="chat-input-container">
-			<view class="chat-input-wrapper">
-				<textarea @input="onInput" @blur="onBlur" :value="inputValue" focus="true" auto-height="true"
-					placeholder="请输入信息" maxlength="-1" class="chat-input" />
-			</view>
-			<view class="chat-send-btn-wrapper">
-				<button class="chat-send-btn" type="primary" @click="onSend">发送</button>
+				<view class="chat-send-btn-wrapper">
+					<button class="chat-send-btn" type="primary" @click="onSend">发送</button>
+				</view>
 			</view>
 		</view>
 	</view>
@@ -34,6 +68,7 @@
 
 <script>
 	import towxml from '@/static/towxml/towxml'
+	import util from '@/utils/util.js'
 
 	export default {
 		components: {
@@ -41,13 +76,53 @@
 		},
 		data() {
 			return {
-				testMsgList: [{
-					role: "user",
-					content: '你好: ``` public class Demo{ private String name;}```'
-				}, {
-					role: "assistant",
-					content: '这是你需要的代码 ``` public class Assistant{ private String name; private String code;}```  # 结果如下：- 1 - 2'
-				}],
+				horizontal: 'left',
+				vertical: 'top',
+				direction: 'horizontal',
+				pattern: {
+					color: '#7A7E83',
+					backgroundColor: '#fff',
+					selectedColor: '#007AFF',
+					buttonColor: '#007AFF',
+					iconColor: '#fff'
+				},
+				content: [{
+						iconPath: '/static/images/tabbar/create_new.png',
+						selectedIconPath: '/static/images/tabbar/create_new.png',
+						text: '新建',
+						active: false
+					},
+					{
+						iconPath: '/static/images/tabbar/copy.png',
+						selectedIconPath: '/static/images/tabbar/copy.png',
+						text: '复制',
+						active: false
+					},
+					{
+						iconPath: '/static/images/tabbar/保存.png',
+						selectedIconPath: '/static/images/tabbar/保存.png',
+						text: '保存',
+						active: false
+					},
+					{
+						iconPath: '/static/images/tabbar/删除.png',
+						selectedIconPath: '/static/images/tabbar/删除.png',
+						text: '删除',
+						active: false
+					}
+				],
+				chatHeadId: '',
+				userId: '',
+				options: [{
+						value: 'copyContent',
+						text: '复制'
+					},
+					{
+						value: 'deleteContent',
+						text: '删除'
+					}
+				],
+				avatarUrl: "/static/images/headImages/userQuery.png",
 				towxmlFunc: require('@/static/towxml/index.js'),
 				mdMessageList: [], // 页面显示MD的消息列表
 				pendingMsg: {
@@ -66,18 +141,241 @@
 				},
 			}
 		},
+
 		onLoad(options) {
-			if (this.testMsgList.length > 0) {
-				for (let i = 0; i < this.testMsgList.length; i++) {
-					this.mdMessageList.push({
-						role: this.testMsgList[i].role,
-						content: this.towxmlFunc(this.testMsgList[i].content, 'markdown')
-					})
-				}
+			if (util.isStringNotEmpty(this.$store.state.avatarUrl)) {
+				this.avatarUrl = this.$store.state.avatarUrl
 			}
+			if (util.isStringNotEmpty(this.$store.state.userId)) {
+				this.userId = this.$store.state.userId
+			}
+			this.chatHeadId = options.chatHeadId
+			if (util.isNull(this.chatHeadId)) {
+				return
+			}
+			const queryParams = {
+				headId: this.chatHeadId
+			}
+			this.$request.get("/chat-gpt-gw/chat-gpt/chat/content/line/query", queryParams)
+				.then(res => {
+					if (!res.success) {
+						let errMsg = res.message;
+						console.error('发送失败:', errMsg)
+						uni.showModal({
+							content: '请求聊天详情失败, Error:' + errMsg,
+							showCancel: false,
+							confirmText: '确定'
+						})
+						return
+					}
+
+					let chatLineList = res.data
+					for (let i = 0; i < chatLineList.length; i++) {
+						let chatMsg = {
+							role: chatLineList[i].chatRole,
+							content: chatLineList[i].chatContent
+						}
+						this.chatBody.messages.push(chatMsg)
+
+						let mdMsg = {
+							role: chatLineList[i].chatRole,
+							content: this.towxmlFunc(chatLineList[i].chatContent, 'markdown'),
+						}
+						this.mdMessageList.push(mdMsg)
+					}
+					this.scrollToBottom()
+				}).catch(err => {
+					this.isSendingMsg = false
+					uni.showModal({
+						content: '获取聊天详情失败，error:' + err,
+						showCancel: false,
+						confirmText: '确定'
+					})
+				})
+		},
+
+		onHide() {
+			this.saveChat()
 		},
 
 		methods: {
+			trigger(e) {
+				console.log(e)
+				this.content[e.index].active = true
+				switch (e.item.text) {
+					case '新建':
+						this.createNewChat()
+						break
+					case '复制':
+						this.copyChat()
+						break
+					case '保存':
+						this.saveChat()
+						break
+					case '删除':
+						this.deleteChat()
+						break
+					default:
+						console.log("deafult")
+				}
+				this.content[e.index].active = false
+			},
+			fabClick() {
+				console.log("fabClick")
+			},
+			saveChat() {
+				if (this.chatBody.messages.length < 1) return
+				let chatLineList = []
+				for (let i = 0; i < this.chatBody.messages.length; i++) {
+					let chatLine = {
+						chatRole: this.chatBody.messages[i].role,
+						chatContent: this.chatBody.messages[i].content
+					}
+					chatLineList.push(chatLine)
+				}
+				let chatParam = {
+					userId: this.userId,
+					headId: util.isNull(this.chatHeadId) ? null : this.chatHeadId,
+					chatLineVoList: chatLineList
+				}
+				this.$request.post("/chat-gpt-gw/chat-gpt/chat/content/add", chatParam)
+					.then(res => {
+						if (!res.success) {
+							let errMsg = res.message;
+							console.error('保存聊天失败:', errMsg)
+							uni.showModal({
+								content: '保存聊天详情失败, Error:' + errMsg,
+								showCancel: false,
+								confirmText: '确定'
+							})
+							return
+						}
+						debugger
+						this.chatHeadId = res.data
+					}).catch(err => {
+						this.isSendingMsg = false
+						uni.showModal({
+							content: '保存聊天信息失败，error:' + err,
+							showCancel: false,
+							confirmText: '确定'
+						})
+					})
+			},
+			createNewChat() {
+				this.saveChat()
+				this.chatBody = {
+					model: "gpt-3.5-turbo",
+					messages: []
+				}
+				this.mdMessageList = []
+			},
+			copyChat() {
+				var chatContentArr = new Array();
+				if (util.isNotNull(this.chatHeadId)) {
+					chatContentArr.push("# ")
+					chatContentArr.push("会话-")
+					chatContentArr.push(this.chatHeadId)
+					chatContentArr.push("\n")
+				}
+				for (var i = 0; i < this.chatBody.messages.length; i++) {
+					let msg = this.chatBody.messages[i]
+					chatContentArr.push("### ")
+					chatContentArr.push(msg.role)
+					chatContentArr.push("\n")
+					chatContentArr.push(msg.content)
+					chatContentArr.push("\n\n")
+					chatContentArr.push("---")
+					chatContentArr.push("\n\n")
+				}
+				let chatContentStr = chatContentArr.join('');
+				uni.setClipboardData({
+					data: chatContentStr,
+					success: () => {
+						uni.showToast({
+							title: "复制MD文本成功"
+						})
+					}
+				})
+			},
+			exportPdf() {
+				uni.showModal({
+					content: '功能开发中...',
+					showCancel: false,
+					confirmText: '确定'
+				})
+			},
+			exportMd() {
+				uni.showModal({
+					content: '功能开发中...',
+					showCancel: false,
+					confirmText: '确定'
+				})
+			},
+			deleteChat() {
+				if (util.isNotNull(this.chatHeadId)) {
+					let idList = []
+					idList.push(this.chatHeadId)
+					let delParam = {
+						headIdList: idList
+					}
+					this.$request.del("/chat-gpt-gw/chat-gpt/chat/content/delete", delParam)
+						.then(res => {
+							if (!res.success) {
+								let errMsg = res.message;
+								console.error('删除聊天失败:', errMsg)
+								uni.showModal({
+									content: '删除聊天详情失败, Error:' + errMsg,
+									showCancel: false,
+									confirmText: '确定'
+								})
+								return
+							}
+							this.chatHeadId = res.data
+						}).catch(err => {
+							this.isSendingMsg = false
+							uni.showModal({
+								content: '删除聊天信息失败，error:' + err,
+								showCancel: false,
+								confirmText: '确定'
+							})
+						})
+				}
+				this.chatBody = {
+					model: "gpt-3.5-turbo",
+					messages: []
+				}
+				this.mdMessageList = []
+			},
+			menuAction(action, rowId) {
+				// 打印看参数
+				console.log(JSON.stringify(action))
+				console.log(JSON.stringify(rowId))
+				// 忽略初始化时的传入的空操作
+				if (action === '') {
+					return
+				}
+				// 动作
+				if (action === 'copyContent') {
+					let value = this.chatBody.messages[rowId].content
+					uni.setClipboardData({
+						data: value,
+						success: () => {
+							uni.showToast({
+								title: "复制文本成功"
+							})
+						}
+					})
+				} else if (action === 'deleteContent') {
+					this.chatBody.messages.splice(rowId, 1)
+					this.mdMessageList.splice(rowId, 1)
+					this.saveChat()
+					success: () => {
+						uni.showToast({
+							title: "删除成功"
+						})
+					}
+				}
+			},
 			onBlur(e) {
 				console.log("onBlur e.detail.value=" + e.detail.value)
 				// this.onSend()
@@ -126,8 +424,7 @@
 				}
 				this.mdMessageList.push(mdPendingMsg) // 插入提示语
 				this.scrollToBottom()
-				this.$request.post("/chat-server/v1/chat/completions", this.chatBody).then(res => {
-					debugger
+				this.$request.post("/chat-gpt-gw/chat-gpt/v1/chat/completions", this.chatBody).then(res => {
 					if (!res.success) {
 						let errMsg = res.message;
 						console.error('发送失败:', errMsg)
@@ -136,6 +433,7 @@
 							showCancel: false,
 							confirmText: '确定'
 						})
+						this.isSendingMsg = false
 						return
 					}
 					console.log('消息发送成功', res)
@@ -168,7 +466,6 @@
 
 			//滚动到底部
 			scrollToBottom() {
-				debugger
 				let query = uni.createSelectorQuery().in(this)
 				query.select('#chatContainer').boundingClientRect()
 				query.selectAll('#chatContent').boundingClientRect()
@@ -192,6 +489,25 @@
 
 
 <style scoped>
+	.tool-bar {
+		display: flex;
+		flex-direction: row;
+		padding-left: 10rpx;
+		align-items: flex-center;
+		align-content: flex-center;
+		justify-content: space-aroud;
+		background-color: whitesmoke;
+	}
+
+	.tool-item {
+		flex-basis: 100rpx;
+		flex-grow: 1;
+	}
+
+	.tool-item-btn {
+		background-color: #007AFF;
+	}
+
 	.chat-container {
 		display: flex;
 		flex-direction: column;
@@ -204,7 +520,7 @@
 	.chat-content {
 		display: flex;
 		flex-direction: column;
-		background-color: lightyellow;
+		/* background-color: lightyellow; */
 		width: 100%;
 		height: 90vh;
 	}
@@ -230,9 +546,8 @@
 	}
 
 	.head-image {
-		width: 60rpx;
-		height: 60rpx;
-		/* flex-basis: 60rpx; */
+		width: 65rpx;
+		height: 65rpx;
 	}
 
 	.content-left>>>.h2w__main {
@@ -243,6 +558,15 @@
 		max-width: 600rpx;
 		padding: 0rpx 10rpx;
 		margin: 0;
+	}
+
+	.copyBtn {
+		width: 15rpx;
+		align-items: flex-start;
+	}
+
+	.content-right {
+		padding-right: 10rpx;
 	}
 
 	.content-right>>>.h2w__main {

@@ -15,31 +15,44 @@
 			getLogin() {
 				uni.login({
 					success: function(res) {
-						debugger
 						if (res.code) {
 							const params = {
+								loginType: 'wxMiniProgram',
 								js_code: res.code,
 								grant_type: 'authorization_code'
 							}
-							request.post('/chat-server/wechat/login', params)
+							request.post('/user-gw/user/login', params)
 								.then(response => {
-									debugger
-									const openid = response.data.openid
-									const sessionKey = response.data.session_key
+									const userId = response.data.curUser.userId
+									const avatarUrl = response.data.curUser.headImg
+									const username = response.data.curUser.name
+									const nickname = response.data.curUser.nickName
+									const token = response.data.token
+									const curRole = response.data.curRole
+									const curPermissionList = response.data.curPermissionList
+									const validRoleList = response.data.validRoleList
+									const openid = response.data.wechatLoginRes.openid
+									const sessionKey = response.data.wechatLoginRes.session_key
 									store.commit('login', {
 										"openid": openid,
-										"sessionKey": sessionKey
+										"sessionKey": sessionKey,
+										"userId": userId,
+										"avatarUrl": avatarUrl,
+										"username": username,
+										"nickname": nickname,
+										"token": token,
+										"curRole": curRole,
+										"validRoleList": validRoleList,
+										"curPermissionList": curPermissionList
 									});
 
 								}).catch(err => {
-									debugger
 									uni.showToast({
-										title: '请求出错:' + err.errMsg,
+										title: '请求出错:' + err,
 										icon: 'none'
 									})
 								})
 						} else {
-							debugger
 							uni.showToast({
 								title: '获取用户登录Code为空',
 								icon: 'none'

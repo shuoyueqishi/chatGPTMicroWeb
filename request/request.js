@@ -1,47 +1,37 @@
 import NEV from "./config.js"
+import util from "@/utils/util.js"
 
 
-const defaultConfig = {
-	loading: true,
-	headers: {}
-}
-
-function request(method, path, data, config = defaultConfig) {
-	debugger
-	const token = uni.getStorageSync("token");
-	const Authorization = token ? `Bearer ${uni.getStorageSync("token")}` : "";
-
-	if (config.loading) {
-		uni.showLoading({
-			title: "加载中...",
-			mask: true
-		});
+function request(method, path, data, header = {}) {
+	uni.showLoading({
+		title: "加载中...",
+		mask: true
+	})
+	let reqHeaders = {
+		'token': uni.getStorageSync("token"),
+		'Access-Control-Allow-Origin': '*',
+		'Content-Type': 'application/json'
 	}
-
+	for (let key in header) {
+		reqHeaders.put(key, data[key])
+	}
 	return new Promise((resolve, reject) => {
-		debugger
 		uni.request({
-			header: {
-				'Authorization': Authorization,
-				'Access-Control-Allow-Origin': '*',
-				'Content-Type': 'application/json'
-			},
 			url: NEV.BASE_URL + path,
-			method: method,
-			data: data,
+			method: method || 'GET',
+			data: data || {},
+			header: reqHeaders,
 			success(response) {
-				debugger
 				if (response.data.code !== "200") {
 					uni.showToast({
 						icon: "none",
-						duration: 4000,
+						duration: 5000,
 						title: response.data.msg
 					});
 				}
 				resolve(response.data);
 			},
 			fail(err) {
-				debugger
 				uni.showToast({
 					icon: "none",
 					title: '服务响应失败'
@@ -52,11 +42,11 @@ function request(method, path, data, config = defaultConfig) {
 			complete() {
 				uni.hideLoading();
 			}
-		});
-	});
+		})
+	})
 }
 
-function get(path, data, config) {
+function get(path, data, header) {
 	let params = '?'
 	for (let key in data) {
 		params += `${key}=${data[key]}&`
@@ -65,19 +55,28 @@ function get(path, data, config) {
 	params = params.slice(0, -1)
 	path += params
 	console.log(path)
-	return this.request('GET', path, {}, config)
+	return this.request('GET', path, null, header)
 }
 
-function post(path, data, config) {
-	return this.request('POST', path, data, config)
+function post(path, data, header) {
+	if (util.isNull(header)) {
+		header = {}
+	}
+	return this.request('POST', path, data, header)
 }
 
-function put(path, data, config) {
-	return this.request('PUT', path, data, config)
+function put(path, data, header) {
+	if (util.isNull(header)) {
+		header = {}
+	}
+	return this.request('PUT', path, data, header)
 }
 
-function del(path, data, config) {
-	return this.request('DELETE', path, data, config)
+function del(path, data, header) {
+	if (util.isNull(header)) {
+		header = {}
+	}
+	return this.request('DELETE', path, data, header)
 }
 
 export default {
@@ -87,52 +86,3 @@ export default {
 	del,
 	put
 }
-
-// 全局请求封装
-// export default (path, data = {}, config = defauls) => {
-// 	debugger
-// 	const token = uni.getStorageSync("token");
-// 	const Authorization = token ? `Bearer ${uni.getStorageSync("token")}` : "";
-
-// 	if (config.loading) {
-// 		uni.showLoading({
-// 			title: "加载中...",
-// 			mask: true
-// 		});
-// 	}
-
-// 	return new Promise((resolve, reject) => {
-// 		debugger
-// 		uni.request({
-// 			header: {
-// 				Authorization
-// 			},
-// 			url: NEV.BASE_URL + path,
-// 			method: config.method,
-// 			data,
-// 			success(response) {
-// 				debugger
-// 				if (response.data.code !== "200") {
-// 					uni.showToast({
-// 						icon: "none",
-// 						duration: 4000,
-// 						title: response.data.msg
-// 					});
-// 				}
-// 				resolve(response.data);
-// 			},
-// 			fail(err) {
-// 				debugger
-// 				uni.showToast({
-// 					icon: "none",
-// 					title: '服务响应失败'
-// 				});
-// 				console.error(err);
-// 				reject(err);
-// 			},
-// 			complete() {
-// 				uni.hideLoading();
-// 			}
-// 		});
-// 	});
-// };
